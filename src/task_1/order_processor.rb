@@ -20,26 +20,26 @@ class OrderProcessor
   private
 
   def total
-    @order[:total].to_f
+    @total ||= @order[:total].to_f
   end
 
   def shipping_cost
-    total > 100 ? 10 : 20
+    @shipping_cost ||= total > 100 ? 10 : 20
   end
 
   def tax
-    total * 0.1
+    @tax ||= total * 0.1
   end
 
   def gross_total
-    total + shipping_cost + tax
+    @gross_total ||= total + shipping_cost + tax
   end
 
   def discount
-    gross_total > 1000 ? 50 : 0
+    @discount ||= gross_total > 1000 ? 50 : 0
   end
 
   def final_total
-    gross_total - discount
+    @final_total ||= gross_total - discount
   end
 end
