@@ -1,41 +1,44 @@
+require 'dry/monads'
+
 class OrderProcessor
+  include Dry::Monads[:result]
+
   def initialize(order)
     @order = order
   end
 
   def process
-    if @order.nil?
-      puts 'Error: Order is nil.'
-      nil
-    elsif !@order.is_a?(Hash)
-      puts 'Error: Order must be a Hash.'
-      nil
-    elsif !@order.has_key?(:total)
-      puts 'Error: Missing total in order.'
-      nil
-    elsif @order[:total].to_f <= 0
-      puts 'Error: Total must be greater than 0.'
-      nil
-    else
-      total = @order[:total].to_f
-      shipping_cost = if total > 100
-                        10
-                      else
-                        20
-                      end
-      tax = total * 0.1
-      gross_total = total + shipping_cost + tax
-      discount = 0
-      discount = 50 if gross_total > 1000
-      final_total = gross_total - discount
-      if final_total < 0
-        puts 'Error: Final total cannot be negative.'
-        nil
-      else
-        return "Order processed with high total: #{final_total}" if final_total > 500
+    find_total(@order).bind do |total|
+      calculate_gross_total(total).bind do |gross_total|
+        calculate_discount(gross_total).fmap do |discount|
+          final_total = gross_total - discount
+          return Failure(:final_total_cannot_be_negative) if final_total.negative?
 
-        final_total
+          final_total
+        end
       end
     end
+  end
+
+  private
+
+  def find_total(order)
+    return Failure(:order_is_nil) if order.nil?
+    return Failure(:order_must_be_a_hash) unless order.is_a?(Hash)
+    return Failure(:missing_total_in_order) unless order.key?(:total)
+    return Failure(:total_must_be_greater_than_zero) if order[:total].to_f <= 0
+
+    Success(order[:total].to_f)
+  end
+
+  def calculate_gross_total(total)
+    shipping_cost = total > 100 ? 10 : 20
+    tax = total * 0.1
+
+    Success(total + shipping_cost + tax)
+  end
+
+  def calculate_discount(gross_total)
+    Success(gross_total > 1000 ? 50 : 0)
   end
 end
