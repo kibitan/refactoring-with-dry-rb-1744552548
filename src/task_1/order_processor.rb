@@ -10,9 +10,9 @@ class OrderProcessor
   def process
     return Failure(:order_is_nil) if @order.nil?
     return Failure(:order_must_be_a_hash) unless @order.is_a?(Hash)
-    return Failure(:missing_total_in_order) unless @order.has_key?(:total)
+    return Failure(:missing_total_in_order) unless @order.key?(:total)
     return Failure(:total_must_be_greater_than_zero) if @order[:total].to_f <= 0
-    return Failure(:final_total_cannot_be_negative) if final_total < 0
+    return Failure(:final_total_cannot_be_negative) if final_total.negative?
 
     Success(final_total)
   end
