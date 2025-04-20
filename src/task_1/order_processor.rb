@@ -9,7 +9,9 @@ class OrderProcessor
 
   def process
     find_total(@order).bind do |total|
-      calculate_final_total(total)
+      calculate_gross_total(total).bind do |gross_total|
+        calculate_final_total(gross_total)
+      end
     end
   end
 
@@ -24,19 +26,18 @@ class OrderProcessor
     Success(order[:total].to_f)
   end
 
-  def calculate_final_total(total)
+  def calculate_gross_total(total)
     shipping_cost = total > 100 ? 10 : 20
     tax = total * 0.1
-    gross_total = total + shipping_cost + tax
-    discount = gross_total > 1000 ? 50 : 0
 
+    Success(total + shipping_cost + tax)
+  end
+
+  def calculate_final_total(gross_total)
+    discount = gross_total > 1000 ? 50 : 0
     final_total = gross_total - discount
     return Failure(:final_total_cannot_be_negative) if final_total.negative?
 
     Success(final_total)
-  end
-
-  def final_total
-    @final_total ||= gross_total - discount
   end
 end
