@@ -9,12 +9,10 @@ class OrderProcessor
 
   def process
     find_total(@order).bind do |total|
-      calculate_gross_total(total).fmap do |gross_total|
-        discount = gross_total > 1000 ? 50 : 0
-        final_total = gross_total - discount
-        return Failure(:final_total_cannot_be_negative) if final_total.negative?
-
-        final_total
+      calculate_gross_total(total).bind do |gross_total|
+        calculate_discount(gross_total).bind do |discount|
+          calculate_final_total(gross_total, discount)
+        end
       end
     end
   end
@@ -35,5 +33,16 @@ class OrderProcessor
     tax = total * 0.1
 
     Success(total + shipping_cost + tax)
+  end
+
+  def calculate_discount(gross_total)
+    Success(gross_total > 1000 ? 50 : 0)
+  end
+
+  def calculate_final_total(gross_total, discount)
+    final_total = gross_total - discount
+    return Failure(:final_total_cannot_be_negative) if final_total.negative?
+
+    Success(final_total)
   end
 end
