@@ -1,39 +1,34 @@
-class UserProfile
-  attr_reader :username, :email, :password, :age, :bio, :interests, :errors
+require "dry/validation"
+require "dry/monads"
+
+class UserProfile < Dry::Validation::Contract
+  attr_reader :errors
+
+  params do
+    required(:username).filled(:string)
+    required(:email).filled(:string)
+    required(:password).filled(:string)
+    required(:age).filled(:integer)
+    required(:bio).filled(:string)
+    required(:interests).filled(:string)
+    required(:errors).filled(:string)
+  end
+
+  rule(:username) do
+    key.failure('contains invalid special characters!') if value =~ /[^a-zA-Z0-9_]/
+    key.failure('is too long!') if value.size > 20
+  end
 
   def initialize(params = {})
-    @username  = params[:username]
-    @email     = params[:email]
-    @password  = params[:password]
-    @age       = params[:age]
-    @bio       = params[:bio]
-    @interests = params[:interests]
     @errors = []
     @data = params
   end
 
   def valid?
-    validate_username
-    validate_email
-    validate_password
-    validate_age
-    validate_bio
-    validate_interests
-
-    @errors.empty?
+    call(@data)
   end
 
   private
-
-  def validate_username
-    if @username.nil? || @username.empty?
-      @errors << 'Username cannot be empty!'
-    elsif @username =~ /[^a-zA-Z0-9_]/
-      @errors << 'Username contains invalid special characters!'
-    elsif @username.size > 20
-      @errors << 'Username is too long!'
-    end
-  end
 
   def validate_email
     if @email.nil? || @email.strip.empty?
